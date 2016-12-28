@@ -296,7 +296,7 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
             pkt->cmdString(), pkt->getAddr(), pkt->getSize());
 
     //reset by Bi
-    unsigned bank_id = getBankId(pkt->getAddr());
+    //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     //get the latency here no matter it is read or not
@@ -399,7 +399,7 @@ Cache<TagStore>::recvTimingSnoopResp(PacketPtr pkt)
     DPRINTF(Cache, "%s for %s address %x size %d\n", __func__,
             pkt->cmdString(), pkt->getAddr(), pkt->getSize());
     //reset by Bi
-    unsigned bank_id = getBankId(pkt->getAddr());
+    //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     //get the latency here no matter it is read or not
@@ -447,7 +447,7 @@ Cache<TagStore>::recvTimingReq(PacketPtr pkt)
     pendingDelete.clear();
 
     //reset by Bi
-    unsigned bank_id = getBankId(pkt->getAddr());
+    //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     //get the latency here no matter it is read or not
@@ -699,7 +699,7 @@ Tick
 Cache<TagStore>::recvAtomic(PacketPtr pkt)
 {
     //reset by Bi
-    unsigned bank_id = getBankId(pkt->getAddr());
+    //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     //get the latency here no matter it is read or not
@@ -914,7 +914,7 @@ Cache<TagStore>::recvTimingResp(PacketPtr pkt)
     assert(pkt->isResponse());
 
     //reset by Bi
-    unsigned bank_id = getBankId(pkt->getAddr());
+    //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     //get the latency here no matter it is read or not
@@ -1397,7 +1397,7 @@ doTimingSupplyResponse(PacketPtr req_pkt, uint8_t *blk_data,
     }
 
     //reset by Bi
-    unsigned bank_id = getBankId(pkt->getAddr());
+    //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     //get the latency here no matter it is read or not
@@ -1628,7 +1628,7 @@ Cache<TagStore>::recvAtomicSnoop(PacketPtr pkt)
     }
 
     //reset by Bi
-    unsigned bank_id = getBankId(pkt->getAddr());
+    //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     //get the latency here no matter it is read or not
