@@ -1,11 +1,11 @@
 
 /**
  * @file
- * Declaration of a LRU_NUCA tag store.
+ * Declaration of a T_NUCA tag store.
  */
 
-#ifndef __MEM_CACHE_TAGS_LRU_NUCA_HH__
-#define __MEM_CACHE_TAGS_LRU_NUCA_HH__
+#ifndef __MEM_CACHE_TAGS_T_NUCA_HH__
+#define __MEM_CACHE_TAGS_T_NUCA_HH__
 
 #include <cassert>
 #include <cstring>
@@ -15,16 +15,16 @@
 #include "mem/cache/tags/cacheset.hh"
 #include "mem/cache/blk.hh"
 #include "mem/packet.hh"
-#include "params/LRU_NUCA.hh" //
+#include "params/T_NUCA.hh" //???
 
 class BaseCache;
 
 
 /**
- * A LRU_NUCA cache tag store.
+ * A T_NUCA cache tag store.
  * @sa  \ref gem5MemorySystem "gem5 Memory System"
  */
-class LRU_NUCA : public BaseTags
+class T_NUCA : public BaseTags
 {
   public:
     /** Typedef the block type used in this tag store. */
@@ -36,6 +36,27 @@ class LRU_NUCA : public BaseTags
 
 
   protected:
+    //changed position
+    /** The latency of the cache. */
+    const double basicLatency;
+    const double deltaLatency;
+    const double localReadLatency;
+    const double localWriteLatency_hot;
+    const double localWriteLatency_cool;
+
+    /** to mark wether swap between zone continuesly */
+    bool zoneSwapFlag;
+
+    /** cost ratio of write and read */
+    const unsigned costRatio;
+
+    /** all the counter of blks in a set will be reset
+     * when one of them get to this number. */
+    const int maxNumOfCounter;
+
+    /** The size of hotzone */
+    const unsigned hotZoneSize;
+    ///
 
     /** The associativity of the cache. */
     const unsigned assoc;
@@ -44,13 +65,6 @@ class LRU_NUCA : public BaseTags
     /** Whether tags and data are accessed sequentially. */
     const bool sequentialAccess;
 
-    /** The latency of the cache. */
-    const double basicReadLatency;
-    const double basicWriteLatency;
-    const double deltaReadLatency;
-    const double deltaWriteLatency;
-    const double localWriteLatency;
-    const double hotZoneSize;
     /** The cache sets. */
     SetType *sets;
 
@@ -69,24 +83,33 @@ class LRU_NUCA : public BaseTags
     unsigned blkMask;
 
     // statistics variables
-    Stats::Scalar lru_nuca_access_num;
-    Stats::Scalar lru_nuca_access_hotzone_cost;
-    Stats::Scalar lru_nuca_access_coolzone_cost;
-
+    Stats::Vector t_nuca_access_num;
+    Stats::Vector t_nuca_cost_num;
+    Stats::Vector t_nuca_insert_num;
+    Stats::Vector2d t_nuca_access_cost;
+    //Stats::Vector t_nuca_access_cost_by_read;
+    //Stats::Vector t_nuca_access_cost_by_write;
+    Stats::Vector2d t_nuca_access_read;
+    Stats::Vector2d t_nuca_access_write;
+    std::vector<Stats::Formula> t_nuca_hotzone_cost_by_context;
+    std::vector<Stats::Formula> t_nuca_coolzone_cost_by_context;
+    Stats::Formula t_nuca_hotzone_totalcost;
+    Stats::Formula t_nuca_coolzone_totalcost;
+    
 public:
 
     /** Convenience typedef. */
-     typedef LRU_NUCAParams Params; //???
+     typedef T_NUCAParams Params; //???
 
     /**
      * Construct and initialize this tag store.
      */
-    LRU_NUCA(const Params *p);
+    T_NUCA(const Params *p);
 
     /**
      * Destructor
      */
-    virtual ~LRU_NUCA();
+    virtual ~T_NUCA();
 
     /**
      * Register the stats for this object.
@@ -105,7 +128,7 @@ public:
     }
 
     /**
-     * Return the subblock size. In the case of LRU_NUCA it is always the block
+     * Return the subblock size. In the case of T_NUCA it is always the block
      * size.
      * @return The block size.
      */
@@ -115,10 +138,23 @@ public:
         return blkSize;
     }
 
-    unsigned
+    // changed posi
+    int
     getBlockPosition(Addr addr, bool is_secure) const;
     Cycles
     calcLatency(Addr addr, bool is_secure, bool is_read) const;
+    void
+    updatePosition(Addr addr, bool is_secure, bool is_read);
+    void
+    calcUpdatePosition(Addr addr, bool is_secure, bool is_read,
+        bool& zone_swap_flag, int& src_posi, int& des_posi) const;
+    void
+    incCostCount(Addr addr, bool is_secure, bool is_read, int id);
+    /** all the counter of blks in a set will be reset
+     * when one of them get to maxNumOfCounter. */
+     void
+     clearAllCounter(unsigned set);
+    ///
 
     /**
      * Invalidate the given block.
@@ -157,7 +193,7 @@ public:
     BlkType* findVictim(Addr addr);
 
     /**
-     * Insert the new block into the cache.  For LRU_NUCA this means inserting into
+     * Insert the new block into the cache.  For T_NUCA this means inserting into
      * the MRU position of the set.
      * @param pkt Packet holding the address to update
      * @param blk The block to update.

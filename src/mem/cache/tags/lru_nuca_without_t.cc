@@ -8,7 +8,7 @@
 #include "base/intmath.hh"
 #include "debug/Cache.hh"
 #include "debug/CacheRepl.hh"
-#include "mem/cache/tags/lru_nuca.hh"
+#include "mem/cache/tags/lru_nuca_without_t.hh"
 #include "mem/cache/base.hh"
 #include "sim/core.hh"
 
@@ -18,12 +18,11 @@ LRU_NUCA::LRU_NUCA(const Params *p)
     :BaseTags(p), assoc(p->assoc),
      numSets(p->size / (p->block_size * p->assoc)),
      sequentialAccess(p->sequential_access),
-     basicReadLatency(2),
-     basicWriteLatency(5),
-     deltaReadLatency(1),
-     deltaWriteLatency(1),
-     localWriteLatency(3),
-     hotZoneSize(4)	// change here
+     basicLatency(2),
+     deltaLatency(1),
+     localReadLatency(0),
+     localWriteLatency(27),
+     hotZoneSize(4)                        // change here
 {
     // Check parameters
     if (blkSize < 4 || !isPowerOf2(blkSize)) {
@@ -38,8 +37,8 @@ LRU_NUCA::LRU_NUCA(const Params *p)
     if (hitLatency <= 0) {
         fatal("access latency must be greater than zero");
     }
-    if (basicReadLatency<=0 || basicWriteLatency<=0
-      || deltaReadLatency <=0 || deltaWriteLatency<=0){
+    if (localReadLatency<0 || localWriteLatency<=0
+      || deltaLatency <=0 ){
         fatal("access latency must be positive");
     }
 
@@ -124,7 +123,7 @@ LRU_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
     // either accesses all blocks in parallel, or one block sequentially on
     // a hit.  Sequential access with a miss doesn't access data.
     tagAccesses += assoc;
-    ++lru_nuca_access_num;
+    //lru_nuca_access_num += 1;
     if (sequentialAccess) {
         if (blk != NULL) {
             dataAccesses += 1;
@@ -135,15 +134,16 @@ LRU_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
 
     if (blk != NULL) {
         //statistics
-        if (set > hotZoneSize){//in coolzone
+		unsigned posi = getBlockPosition(addr, is_secure);
+		if (posi > hotZoneSize){//in coolzone
           lru_nuca_access_coolzone_cost += 2;
         }
-        else if (set == hotZoneSize){//at the border
+		else if (posi == hotZoneSize){//at the border
           ++lru_nuca_access_coolzone_cost;
           ++lru_nuca_access_hotzone_cost;
         }
         else{//hotzone
-          if (set != 0){//not in header
+			if (posi != 0){//not in header
             lru_nuca_access_hotzone_cost += 2;
           }
           else{
@@ -152,6 +152,9 @@ LRU_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
         }
         // move this block to head of the MRU list
         sets[set].bubble(blk);
+        //count the access (not include miss)
+        lru_nuca_access_num += 1;
+
         DPRINTF(CacheRepl, "set %x: moving blk %x (%s) to MRU\n",
                 set, regenerateBlkAddr(tag, set), is_secure ? "s" : "ns");
         if (blk->whenReady > curTick()
@@ -182,11 +185,11 @@ LRU_NUCA::calcLatency(Addr addr, bool is_secure, bool is_read) const {
     unsigned lat;
     // latency cause by read
     if (is_read)
-        lat = (unsigned)(localWriteLatency + basicReadLatency +
-            posi * deltaReadLatency + 0.001);
+        lat = (unsigned)(basicLatency + localReadLatency + localWriteLatency
+            + posi * deltaLatency + 0.001);
     else
-        lat = (unsigned)(basicWriteLatency +
-            posi * deltaWriteLatency + 0.001);
+        lat = (unsigned)(basicLatency + localWriteLatency + localWriteLatency
+            + posi * deltaLatency + 0.001);
     return Cycles(lat);
 }
 

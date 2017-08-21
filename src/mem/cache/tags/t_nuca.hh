@@ -38,11 +38,11 @@ class T_NUCA : public BaseTags
   protected:
     //changed position
     /** The latency of the cache. */
-    const double basicReadLatency;
-    const double deltaReadLatency;
-    const double basicWriteLatency;
-    const double deltaWriteLatency;
-    const double localWriteLatency;
+    const double basicLatency;
+    const double deltaLatency;
+    const double localReadLatency;
+    const double localWriteLatency_hot;
+    const double localWriteLatency_cool;
 
     /** to mark wether swap between zone continuesly */
     bool zoneSwapFlag;
@@ -82,6 +82,18 @@ class T_NUCA : public BaseTags
     /** Mask out all bits that aren't part of the block offset. */
     unsigned blkMask;
 
+    // statistics variables
+    Stats::Scalar t_nuca_access_num;
+    Stats::Scalar t_nuca_cost_num;
+    Stats::Scalar t_nuca_insert_num;
+    Stats::Vector t_nuca_cost;
+    //Stats::Vector t_nuca_access_cost_by_read;
+    //Stats::Vector t_nuca_access_cost_by_write;
+    Stats::Vector t_nuca_read;
+    Stats::Vector t_nuca_write;
+    Stats::Formula t_nuca_hotzone_cost;
+    Stats::Formula t_nuca_coolzone_cost;
+    
 public:
 
     /** Convenience typedef. */
@@ -96,6 +108,12 @@ public:
      * Destructor
      */
     virtual ~T_NUCA();
+
+    /**
+     * Register the stats for this object.
+     * @param name The name to prepend to the stats name.
+     */
+    void regStats();
 
     /**
      * Return the block size.
@@ -119,15 +137,17 @@ public:
     }
 
     // changed posi
-    unsigned
+    int
     getBlockPosition(Addr addr, bool is_secure) const;
     Cycles
     calcLatency(Addr addr, bool is_secure, bool is_read) const;
     void
-    updatePosition(Addr addr, bool is_secure);
+    updatePosition(Addr addr, bool is_secure, bool is_read);
     void
     calcUpdatePosition(Addr addr, bool is_secure, bool is_read,
-        bool& zone_swap_flag, unsigned& src_posi, unsigned& des_posi);
+        bool& zone_swap_flag, int& src_posi, int& des_posi) const;
+    void
+    incCostCount(Addr addr, bool is_secure, bool is_read, int id);
     /** all the counter of blks in a set will be reset
      * when one of them get to maxNumOfCounter. */
      void

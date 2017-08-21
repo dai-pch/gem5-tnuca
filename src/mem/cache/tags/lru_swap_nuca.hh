@@ -49,8 +49,8 @@ class LRU_NUCA : public BaseTags
     const double basicWriteLatency;
     const double deltaReadLatency;
     const double deltaWriteLatency;
-    const double localWriteLatency;
-    const double hotZoneSize;
+    const double localWriteLatency;    
+
     /** The cache sets. */
     SetType *sets;
 
@@ -68,11 +68,6 @@ class LRU_NUCA : public BaseTags
     /** Mask out all bits that aren't part of the block offset. */
     unsigned blkMask;
 
-    // statistics variables
-    Stats::Scalar lru_nuca_access_num;
-    Stats::Scalar lru_nuca_access_hotzone_cost;
-    Stats::Scalar lru_nuca_access_coolzone_cost;
-
 public:
 
     /** Convenience typedef. */
@@ -87,12 +82,6 @@ public:
      * Destructor
      */
     virtual ~LRU_NUCA();
-
-    /**
-     * Register the stats for this object.
-     * @param name The name to prepend to the stats name.
-     */
-    void regStats();
 
     /**
      * Return the block size.

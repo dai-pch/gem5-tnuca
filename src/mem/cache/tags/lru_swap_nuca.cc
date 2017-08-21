@@ -22,8 +22,7 @@ LRU_NUCA::LRU_NUCA(const Params *p)
      basicWriteLatency(5),
      deltaReadLatency(1),
      deltaWriteLatency(1),
-     localWriteLatency(3),
-     hotZoneSize(4)	// change here
+     localWriteLatency(3)                        // change here
 {
     // Check parameters
     if (blkSize < 4 || !isPowerOf2(blkSize)) {
@@ -94,23 +93,6 @@ LRU_NUCA::~LRU_NUCA()
     delete [] sets;
 }
 
-void
-LRU_NUCA::regStats()
-{
-  using namespace Stats;
-  BaseTags::regStats();
-  lru_nuca_access_num
-      .name(name() + ".lru_nuca_access_number")
-      .desc("The number of read type accesses in LRU_NUCA cache.");
-  lru_nuca_access_hotzone_cost
-      .name(name() + ".lru_nuca_access_hotzone_cost")
-      .desc("The number of data changing in hotzone caused by read/write accesses in LRU_NUCA cache.");
-  lru_nuca_access_coolzone_cost
-      .name(name() + ".lru_nuca_access_coolzone_cost")
-      .desc("The number of data changing in coolzone caused by read/write accesses in LRU_NUCA cache.");
-}
-
-
 LRU_NUCA::BlkType*
 LRU_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
     int master_id, bool is_read)
@@ -124,7 +106,6 @@ LRU_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
     // either accesses all blocks in parallel, or one block sequentially on
     // a hit.  Sequential access with a miss doesn't access data.
     tagAccesses += assoc;
-    ++lru_nuca_access_num;
     if (sequentialAccess) {
         if (blk != NULL) {
             dataAccesses += 1;
@@ -134,24 +115,8 @@ LRU_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
     }
 
     if (blk != NULL) {
-        //statistics
-        if (set > hotZoneSize){//in coolzone
-          lru_nuca_access_coolzone_cost += 2;
-        }
-        else if (set == hotZoneSize){//at the border
-          ++lru_nuca_access_coolzone_cost;
-          ++lru_nuca_access_hotzone_cost;
-        }
-        else{//hotzone
-          if (set != 0){//not in header
-            lru_nuca_access_hotzone_cost += 2;
-          }
-          else{
-            lru_nuca_access_hotzone_cost = lru_nuca_access_hotzone_cost;
-          }
-        }
         // move this block to head of the MRU list
-        sets[set].bubble(blk);
+        sets[set].moveToHead(blk);
         DPRINTF(CacheRepl, "set %x: moving blk %x (%s) to MRU\n",
                 set, regenerateBlkAddr(tag, set), is_secure ? "s" : "ns");
         if (blk->whenReady > curTick()
@@ -261,7 +226,6 @@ LRU_NUCA::insertBlock(PacketPtr pkt, BlkType *blk)
 
     unsigned set = extractSet(addr);
     sets[set].moveToHead(blk);
-
 
     // We only need to write into one tag and one data block.
     tagAccesses += 1;

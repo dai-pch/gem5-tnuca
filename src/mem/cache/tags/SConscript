@@ -34,4 +34,4 @@ SimObject('Tags.py')
 
 Source('base.cc')
 Source('fa_lru.cc')
-Source('lru_nuca.cc')
+Source('t_nuca.cc')

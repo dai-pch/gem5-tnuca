@@ -45,10 +45,9 @@ class LRU_NUCA : public BaseTags
     const bool sequentialAccess;
 
     /** The latency of the cache. */
-    const double basicReadLatency;
-    const double basicWriteLatency;
-    const double deltaReadLatency;
-    const double deltaWriteLatency;
+    const double basicLatency;
+    const double deltaLatency;
+    const double localReadLatency;
     const double localWriteLatency;
     const double hotZoneSize;
     /** The cache sets. */

@@ -22,8 +22,8 @@ T_NUCA::T_NUCA(const Params *p)
      localWriteLatency_hot(20),
      localWriteLatency_cool(27),
      zoneSwapFlag(false),
-     costRatio(6),                         // change here
-     maxNumOfCounter(16),
+     costRatio(5),                         // change here
+     maxNumOfCounter(64),
      hotZoneSize(4),
      assoc(p->assoc),
      numSets(p->size / (p->block_size * p->assoc)),
@@ -103,66 +103,67 @@ T_NUCA::regStats()
 {
     using namespace Stats;
     BaseTags::regStats();
-    t_nuca_read
-	.init(assoc)
-	.name(name() + ".t_nuca_read")
+    t_nuca_access_read
+	.init(assoc, ContextSwitchTaskId::NumTaskId)
+	.name(name() + ".t_nuca_access_read")
 	.desc("The number of read request in each position.")
 	.flags(total | nozero | nonan);
-    t_nuca_write
-	.init(assoc)
-	.name(name() + ".t_nuca_write")
+    t_nuca_access_write
+	.init(assoc, ContextSwitchTaskId::NumTaskId)
+	.name(name() + ".t_nuca_access_write")
 	.desc("The number of write request in each position.")
 	.flags(total | nozero | nonan);
-    t_nuca_cost
-        .init(assoc)
-	.name(name() + ".t_nuca_cost")
+    t_nuca_access_cost
+        .init(assoc, ContextSwitchTaskId::NumTaskId)
+	.name(name() + ".t_nuca_access_cost")
 	.desc("The cost in each position.")
 	.flags(total | nozero | nonan);
-//    t_nuca_cost_by_read
+//    t_nuca_access_cost_by_read
 //	.init(assoc)
-//	.name(name() + ".t_nuca_cost_by_read")
+//	.name(name() + ".t_nuca_access_cost_by_read")
 //	.desc("The cost caused by read request in each position.")
 //	.flags(total);
-//    t_nuca_cost_by_write
+//    t_nuca_access_cost_by_write
 //	.init(assoc)
-//	.name(name() + ".t_nuca_cost_by_write")
+//	.name(name() + ".t_nuca_access_cost_by_write")
 //	.desc("The cost caused by write request in each position.")
 //	.flag(total);
     t_nuca_access_num
+	.init(ContextSwitchTaskId::NumTaskId)
         .name(name() + ".t_nuca_access_number")
-        .desc("The total number of hit accesses in T_NUCA cache.");
+        .desc("The total number of hit accesses in T_NUCA cache.")
+	.flags(total | nozero | nonan);
     t_nuca_cost_num
+	.init(ContextSwitchTaskId::NumTaskId)
         .name(name() + ".t_nuca_cost_number")
-        .desc("The total number of cost caused by hit access in T_NUCA cache.");
+        .desc("The total number of cost caused by hit access in T_NUCA cache.")
+	.flags(total | nozero | nonan);
 
     t_nuca_insert_num
+	.init(ContextSwitchTaskId::NumTaskId)
         .name(name() + ".t_nuca_insert_number")
-        .desc("The number of insert in T_NUCA cache.");
+        .desc("The number of insert in T_NUCA cache.")
+	.flags(total | nozero | nonan);
 
     for (int ii = 0;ii<assoc;++ii) {
-	t_nuca_read.subname(ii, std::string("Position-") + std::to_string(ii));
-	t_nuca_write.subname(ii, std::string("Position-") + std::to_string(ii));
-	t_nuca_cost.subname(ii, std::string("Position-") + std::to_string(ii));
+	t_nuca_access_read.subname(ii, std::string("Position-") + std::to_string(ii));
+	t_nuca_access_write.subname(ii, std::string("Position-") + std::to_string(ii));
+	t_nuca_access_cost.subname(ii, std::string("Position-") + std::to_string(ii));
+	for (int jj = 0; jj < ContextSwitchTaskId::NumTaskId;++jj) {
+	    t_nuca_access_read.ysubname(jj, std::string("Task-") + std::to_string(jj));
+	    t_nuca_access_write.ysubname(jj, std::string("Task-") + std::to_string(jj));
+	    t_nuca_access_cost.ysubname(jj, std::string("Task-") + std::to_string(jj));
+	    t_nuca_access_num.subname(jj, std::string("Task-") + std::to_string(jj));
+	    t_nuca_cost_num.subname(jj, std::string("Task-") + std::to_string(jj));
+	    t_nuca_insert_num.subname(jj, std::string("Task-") + std::to_string(jj));
+	}
     }
-
-    t_nuca_hotzone_cost
-        .name(name() + ".t_nuca_hotzone_cost")
-        .desc("Total cost of hot zone in T_NUCA cache.");
-    t_nuca_coolzone_cost
-        .name(name() + ".t_nuca_coolzone_cost")
-        .desc("Total cost of cool zone in T_NUCA cache.");
     
-    for(int ii = 0;ii < hotZoneSize; ++ii) {
-        t_nuca_hotzone_cost += t_nuca_cost[ii];
-    }
-    for(int ii = hotZoneSize;ii < assoc; ++ii) {
-        t_nuca_coolzone_cost += t_nuca_cost[ii];
-    }
 }
 
 T_NUCA::BlkType*
 T_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
-    int master_id, bool is_read)
+    int context_src, bool is_read)
 {
     Addr tag = extractTag(addr);
     unsigned set = extractSet(addr);
@@ -182,7 +183,7 @@ T_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
     }
 
     if (blk != NULL) {
-        incCostCount(addr, is_secure, is_read, master_id);
+        incCostCount(addr, is_secure, is_read);
         // change position
         updatePosition(addr, is_secure, is_read);
         ///
@@ -322,34 +323,37 @@ T_NUCA::calcUpdatePosition(Addr addr, bool is_secure, bool is_read,
 }
 
 void 
-T_NUCA::incCostCount(Addr addr, bool is_secure, bool is_read, int id) {
+T_NUCA::incCostCount(Addr addr, bool is_secure, bool is_read) {
     int posi1, posi2;
+    unsigned set = extractSet(addr);
     bool tempFlag = zoneSwapFlag;
     calcUpdatePosition(addr, is_secure, is_read, tempFlag,
         posi1, posi2);
-
-    ++t_nuca_access_num;
+    
+    BlkType* blk1 = sets[set].getBlk(posi1);
+    uint32_t id = blk1->task_id;
+    ++t_nuca_access_num[id];
     if (is_read)
-	++t_nuca_read[posi1];
+	++t_nuca_access_read[posi1][id];
     else
-	++t_nuca_write[posi1];
+	++t_nuca_access_write[posi1][id];
 
     if (is_read) // read access dosen't have cost itself
     {
         if (posi1 != posi2) // swap occurs will cause cost
         {
-            ++t_nuca_cost[posi1];
-            ++t_nuca_cost[posi2];
-	    t_nuca_cost_num += 2;
+            ++t_nuca_access_cost[posi1][id];
+            ++t_nuca_access_cost[posi2][id];
+	    t_nuca_cost_num[id] += 2;
         }
     }
     else { // write access
         // there is one cost whether swap occurs
-        ++t_nuca_cost[posi1];
-	++t_nuca_cost_num;
+        ++t_nuca_access_cost[posi1][id];
+	++t_nuca_cost_num[id];
         if (posi1 != posi2) { // swap occurs
-            ++t_nuca_cost[posi2];
-	    ++t_nuca_cost_num;
+            ++t_nuca_access_cost[posi2][id];
+	    ++t_nuca_cost_num[id];
         }
     }
 }
@@ -425,7 +429,7 @@ T_NUCA::insertBlock(PacketPtr pkt, BlkType *blk)
     blk->tickInserted = curTick();
 
     //updatePosition(addr, is_secure, false);
-    ++t_nuca_insert_num;
+    ++t_nuca_insert_num[master_id];
     unsigned set = blk->set;
     clearAllCounter(set);
 

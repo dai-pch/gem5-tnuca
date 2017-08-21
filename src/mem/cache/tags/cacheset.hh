@@ -64,8 +64,8 @@ class CacheSet
 
     /** Cache blocks in this set, maintained in LRU order 0 = MRU. */
     Blktype **blks;
-    
-    int temp;
+
+    //int temp;
 
     /**
      * Find a block matching the tag in this set.
@@ -76,25 +76,32 @@ class CacheSet
      */
     Blktype* findBlk(Addr tag, bool is_secure, int& way_id, unsigned& position) const ;
     Blktype* findBlk(Addr tag, bool is_secure) const ;
-    
+
 
     /**
      * get the position of the cache block
      * designed by Bi
      */
     int findBlkPosition(Addr tag, bool is_secure) const;
-    
+
     /**
      *swap the target block when it touched
      *design by Bi
      */
-    Blktype* swap(unsigned posi1, unsigned posi2);
+    void swap(unsigned posi1, unsigned posi2);
 
     /**
      *get the block
      *designed by Bi
      */
     Blktype* getBlk(unsigned posi);
+
+    /**
+     * Swap the blk with one before it.
+     * designed by Bi
+     * @param blk The target block.
+     */
+    void bubble(Blktype *blk);
 
     /**
      * Move the given block to the head of the list.
@@ -112,8 +119,7 @@ class CacheSet
 
 template <class Blktype>
 Blktype*
-CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id,
-   unsigned& position) const
+CacheSet<Blktype>::findBlk(Addr tag, bool is_secure, int& way_id, unsigned& position) const
 {
     /**
      * Way_id returns the id of the way that matches the block
@@ -137,7 +143,7 @@ Blktype*
 CacheSet<Blktype>::findBlk(Addr tag, bool is_secure) const
 {
     int ignored_way_id;
-    int ignored_position;
+    unsigned ignored_position;
     return findBlk(tag, is_secure, ignored_way_id, ignored_position);
 }
 
@@ -147,28 +153,47 @@ int
 CacheSet<Blktype>::findBlkPosition(Addr tag, bool is_secure) const
 {
   int ignored_way_id;
-  int position;
+  unsigned position;
   findBlk(tag, is_secure, ignored_way_id, position);
   return position;
 }
 
 template <class Blktype>
-Blktype*
+void 
 CacheSet<Blktype>::swap(unsigned posi1, unsigned posi2)
 {
-    temp = blks[posi1];
+    Blktype* temp = blks[posi1];
     blks[posi1] = blks[posi2];
     blks[posi2] = temp;
 }
 
 template <class Blktype>
 Blktype*
-CacheSet<Blktype>::getBlk(unsigned posi)
+CacheSet<Blktype>::getBlk(unsigned posi) 
 {
     return blks[posi];
 }
 
 ///
+template <class Blktype>
+void
+CacheSet<Blktype>::bubble(Blktype *blk)
+{
+    // nothing to do if blk is already head
+    if (blks[0] == blk)
+        return;
+
+    // find the positon of this block.
+    int i = 0;
+    while(blks[i] != blk)
+        ++i;
+    assert(i < assoc);
+    //swap
+    Blktype *temp = blks[i]; // == blk[i]
+    blks[i] = blks[i-1];
+    blks[i-1] = temp;
+    return;
+}
 
 template <class Blktype>
 void
