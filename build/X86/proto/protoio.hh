@@ -1,1 +1,0 @@
-/home/wubi/workspace/gem5/src/proto/protoio.hh

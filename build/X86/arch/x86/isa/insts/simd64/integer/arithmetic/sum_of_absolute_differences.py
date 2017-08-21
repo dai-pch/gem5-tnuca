@@ -1,1 +1,0 @@
-/home/wubi/workspace/gem5/src/arch/x86/isa/insts/simd64/integer/arithmetic/sum_of_absolute_differences.py
