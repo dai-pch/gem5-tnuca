@@ -78,4 +78,4 @@ class BaseCache(MemObject):
     system = Param.System(Parent.any, "System we belong to")
     sequential_access = Param.Bool(False,
         "Whether to access tags and data sequentially")
-    tags = Param.BaseTags(T_NUCA(), "Tag Store for LRU caches")
+    tags = Param.BaseTags(LRU(), "Tag Store for LRU caches")

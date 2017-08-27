@@ -49,6 +49,7 @@
 #include "debug/Drain.hh"
 #include "mem/cache/tags/fa_lru.hh"
 #include "mem/cache/tags/t_nuca.hh"
+#include "mem/cache/tags/lru.hh"
 #include "mem/cache/base.hh"
 #include "mem/cache/cache.hh"
 #include "mem/cache/mshr.hh"
@@ -836,7 +837,11 @@ BaseCacheParams::create()
     //        fatal("Got FALRU tags with more than one set\n");
     //    return new Cache<FALRU>(this);
     // } else 
-    if (dynamic_cast<T_NUCA*>(tags)) {
+    if (dynamic_cast<LRU*>(tags)) {
+        if (numSets == 1)
+            warn("Consider using FALRU tags for a fully associative cache\n");
+	return new Cache<LRU>(this);
+    } else if (dynamic_cast<T_NUCA*>(tags)) {
         if (numSets == 1)
             warn("Consider using FALRU tags for a fully associative cache\n");
         return new Cache<T_NUCA>(this);

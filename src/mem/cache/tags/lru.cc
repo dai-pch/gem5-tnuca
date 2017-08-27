@@ -161,6 +161,13 @@ LRU::accessBlock(Addr addr, bool is_secure, Cycles &lat, int master_id)
     return blk;
 }
 
+// changed here
+
+Cycles
+LRU::calcLatency(Addr addr, bool is_secure, bool is_read) const {
+    return hitLatency;
+}
+///
 
 LRU::BlkType*
 LRU::findBlock(Addr addr, bool is_secure) const

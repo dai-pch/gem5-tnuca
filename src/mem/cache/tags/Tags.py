@@ -53,6 +53,14 @@ class BaseTags(ClockedObject):
     hit_latency = Param.Cycles(Parent.read_latency,
                                "The hit latency for this cache")
 
+class LRU(BaseTags):
+    type = 'LRU'
+    cxx_class = 'LRU'
+    cxx_header = "mem/cache/tags/lru.hh"
+    assoc = Param.Int(Parent.assoc, "associativity")
+    sequential_access = Param.Bool(Parent.sequential_access,
+        "Whether to access tags and data sequentially")
+
 class T_NUCA(BaseTags):
     type = 'T_NUCA'
     cxx_class = 'T_NUCA'

@@ -38,6 +38,7 @@
 
 #include "mem/cache/tags/fa_lru.hh"
 #include "mem/cache/tags/t_nuca.hh"
+#include "mem/cache/tags/lru.hh"
 #include "mem/cache/cache_impl.hh"
 
 // Template Instantiations

@@ -137,6 +137,12 @@ public:
         return blkSize;
     }
 
+    // changed here
+    Cycles
+    calcLatency(Addr addr, bool is_secure, bool is_read) const;
+    ///
+    
+
     /**
      * Invalidate the given block.
      * @param blk The block to invalidate.
