@@ -160,7 +160,7 @@ public:
      * @return Pointer to the cache block if found.
      */
     BlkType* accessBlock(Addr addr, bool is_secure, Cycles &lat,
-                         int context_src);
+                         int context_src, bool is_read);
 
     /**
      * Finds the given address in the cache, do not update replacement data.

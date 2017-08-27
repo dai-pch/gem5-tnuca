@@ -61,6 +61,14 @@ class LRU(BaseTags):
     sequential_access = Param.Bool(Parent.sequential_access,
         "Whether to access tags and data sequentially")
 
+class LRU_NUCA(BaseTags):
+    type = 'LRU_NUCA'
+    cxx_class = 'LRU_NUCA'
+    cxx_header = "mem/cache/tags/lru_nuca.hh"
+    assoc = Param.Int(Parent.assoc, "associativity")
+    sequential_access = Param.Bool(Parent.sequential_access,
+        "Whether to access tags and data sequentially")
+
 class T_NUCA(BaseTags):
     type = 'T_NUCA'
     cxx_class = 'T_NUCA'

@@ -127,7 +127,7 @@ LRU::~LRU()
 }
 
 LRU::BlkType*
-LRU::accessBlock(Addr addr, bool is_secure, Cycles &lat, int master_id)
+LRU::accessBlock(Addr addr, bool is_secure, Cycles &lat, int master_id, bool is_read)
 {
     Addr tag = extractTag(addr);
     unsigned set = extractSet(addr);

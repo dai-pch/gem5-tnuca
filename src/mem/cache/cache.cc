@@ -39,12 +39,15 @@
 #include "mem/cache/tags/fa_lru.hh"
 #include "mem/cache/tags/t_nuca.hh"
 #include "mem/cache/tags/lru.hh"
+#include "mem/cache/tags/lru_nuca.hh"
 #include "mem/cache/cache_impl.hh"
 
 // Template Instantiations
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 //template class Cache<FALRU>;
+template class Cache<LRU>;
+template class Cache<LRU_NUCA>;
 template class Cache<T_NUCA>;
 
 #endif //DOXYGEN_SHOULD_SKIP_THIS
