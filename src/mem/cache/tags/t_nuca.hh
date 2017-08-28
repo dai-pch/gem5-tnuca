@@ -91,8 +91,8 @@ class T_NUCA : public BaseTags
     //Stats::Vector t_nuca_access_cost_by_write;
     Stats::Vector t_nuca_read;
     Stats::Vector t_nuca_write;
-    Stats::Formula t_nuca_hotzone_cost;
-    Stats::Formula t_nuca_coolzone_cost;
+    Stats::Scalar t_nuca_hotzone_cost;
+    Stats::Scalar t_nuca_coolzone_cost;
     
 public:
 

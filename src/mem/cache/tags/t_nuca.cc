@@ -160,13 +160,15 @@ T_NUCA::regStats()
     t_nuca_coolzone_cost
         .name(name() + ".t_nuca_coolzone_cost")
         .desc("Total cost of cool zone in T_NUCA cache.");
-    
+    /*
+    //for formula
     for(int ii = 0;ii < hotZoneSize; ++ii) {
         t_nuca_hotzone_cost += t_nuca_cost[ii];
     }
     for(int ii = hotZoneSize;ii < assoc; ++ii) {
         t_nuca_coolzone_cost += t_nuca_cost[ii];
     }
+    */
 }
 
 T_NUCA::BlkType*
@@ -191,6 +193,7 @@ T_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
     }
 
     if (blk != NULL) {
+        // incCostConunt must be called before update, because of the swap_flag.
         incCostCount(addr, is_secure, is_read, master_id);
         // change position
         updatePosition(addr, is_secure, is_read);
@@ -226,6 +229,7 @@ T_NUCA::getBlockPosition(Addr addr, bool is_secure) const {
 Cycles
 T_NUCA::calcLatency(Addr addr, bool is_secure, bool is_read) const {
     int posi = getBlockPosition(addr, is_secure);
+    unsigned set = extractSet(addr);
     // if element is not found
     if (posi < 0)
         return Cycles(basicLatency);
@@ -242,7 +246,7 @@ T_NUCA::calcLatency(Addr addr, bool is_secure, bool is_read) const {
 
     double localWriteLatency;
     // local write latency are different in different zone
-    if (posi < hotZoneSize) // if in hot zone.
+    if (posi < hotZoneSize[set]) // if in hot zone.
         localWriteLatency = localWriteLatency_hot;
     else
         localWriteLatency = localWriteLatency_cool;
@@ -302,7 +306,7 @@ T_NUCA::calcUpdatePosition(Addr addr, bool is_secure, bool is_read,
     if (src_posi == hot_zone_size) {
         // if it's been swaped last time
         if (zone_swap_flag) {
-            des_posi = hotZoneSize - 2;
+            des_posi = hot_zone_size - 2;
             zone_swap_flag = false;
         }
         else
@@ -338,12 +342,14 @@ T_NUCA::incCostCount(Addr addr, bool is_secure, bool is_read, int id) {
     bool tempFlag = zoneSwapFlag;
     calcUpdatePosition(addr, is_secure, is_read, tempFlag,
         posi1, posi2);
+    unsigned set = extractSet(addr);
+    unsigned hot_zone_size = hotZoneSize[set];
 
     ++t_nuca_access_num;
     if (is_read)
-	++t_nuca_read[posi1];
+	    ++t_nuca_read[posi1];
     else
-	++t_nuca_write[posi1];
+	    ++t_nuca_write[posi1];
 
     if (is_read) // read access dosen't have cost itself
     {
@@ -351,16 +357,33 @@ T_NUCA::incCostCount(Addr addr, bool is_secure, bool is_read, int id) {
         {
             ++t_nuca_cost[posi1];
             ++t_nuca_cost[posi2];
-	    t_nuca_cost_num += 2;
+            t_nuca_cost_num += 2;
+            if (posi1 < hot_zone_size)
+                ++t_nuca_hotzone_cost;
+            else
+                ++t_nuca_coolzone_cost;
+
+            if (posi2 < hot_zone_size)
+                ++t_nuca_hotzone_cost;
+            else
+                ++t_nuca_coolzone_cost;
         }
     }
     else { // write access
         // there is one cost whether swap occurs
         ++t_nuca_cost[posi1];
-	++t_nuca_cost_num;
+        ++t_nuca_cost_num;
+        if (posi1 < hot_zone_size)
+            ++t_nuca_hotzone_cost;
+        else
+            ++t_nuca_coolzone_cost;
         if (posi1 != posi2) { // swap occurs
             ++t_nuca_cost[posi2];
-	    ++t_nuca_cost_num;
+            ++t_nuca_cost_num;
+            if (posi2 < hot_zone_size)
+                ++t_nuca_hotzone_cost;
+            else
+                ++t_nuca_coolzone_cost;
         }
     }
 }
