@@ -64,6 +64,7 @@ T_NUCA::T_NUCA(const Params *p)
     for (int i = 4;i<numSets;++i)
         hot_zone[i] = 4;
     hotZoneSize = hot_zone;
+
     // allocate data storage in one big chunk
     numBlocks = numSets * assoc;
     dataBlks = new uint8_t[numBlocks * blkSize];
