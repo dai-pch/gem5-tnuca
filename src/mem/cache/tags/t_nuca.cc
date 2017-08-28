@@ -24,7 +24,6 @@ T_NUCA::T_NUCA(const Params *p)
      zoneSwapFlag(false),
      costRatio(6),                         // change here
      maxNumOfCounter(16),
-     hotZoneSize(4),
      assoc(p->assoc),
      numSets(p->size / (p->block_size * p->assoc)),
      sequentialAccess(p->sequential_access)
@@ -57,6 +56,14 @@ T_NUCA::T_NUCA(const Params *p)
 
     sets = new SetType[numSets];
     blks = new BlkType[numSets * assoc];
+    hot_zone = new unsigned[numSets];
+    hot_zone[0] = 4;
+    hot_zone[1] = 4;
+    hot_zone[2] = 4;
+    hot_zone[3] = 4;
+    for (int i = 4;i<numSets;++i)
+        hot_zone[i] = 4;
+    hotZoneSize = hot_zone;
     // allocate data storage in one big chunk
     numBlocks = numSets * assoc;
     dataBlks = new uint8_t[numBlocks * blkSize];
@@ -96,6 +103,7 @@ T_NUCA::~T_NUCA()
     delete [] dataBlks;
     delete [] blks;
     delete [] sets;
+    delete [] hotZoneSize;
 }
 
 void
@@ -276,19 +284,21 @@ T_NUCA::calcUpdatePosition(Addr addr, bool is_secure, bool is_read,
     unsigned set = extractSet(addr);
     src_posi = getBlockPosition(addr, is_secure);
 
+    unsigned hot_zone_size = hotZoneSize[set];
     // if srcoure block is in hot zone,
     // it should be swaped by the block before it
-    if (src_posi < hotZoneSize){
-        if (src_posi == 0)
-            des_posi = 0;
-        else
-            des_posi = src_posi - 1;
+    if (src_posi == 0) {
+        des_posi = 0;
+        return;
+    } 
+    if (src_posi < hot_zone_size){
+        des_posi = src_posi - 1;
         return;
     }
 
     // cool zone
     // if it's the top of cool zone
-    if (src_posi == hotZoneSize) {
+    if (src_posi == hot_zone_size) {
         // if it's been swaped last time
         if (zone_swap_flag) {
             des_posi = hotZoneSize - 2;
@@ -296,7 +306,7 @@ T_NUCA::calcUpdatePosition(Addr addr, bool is_secure, bool is_read,
         }
         else
         {
-            des_posi = hotZoneSize - 1;
+            des_posi = hot_zone_size - 1;
             zone_swap_flag = true;
         }
         return;
@@ -316,7 +326,7 @@ T_NUCA::calcUpdatePosition(Addr addr, bool is_secure, bool is_read,
         if (src_count <= temp_count)
             break;
         --ii;
-    } while(ii >= hotZoneSize);
+    } while(ii >= hot_zone_size);
     des_posi = ii + 1;
     return;
 }

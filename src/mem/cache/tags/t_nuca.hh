@@ -55,7 +55,7 @@ class T_NUCA : public BaseTags
     const int maxNumOfCounter;
 
     /** The size of hotzone */
-    const unsigned hotZoneSize;
+    const unsigned *hotZoneSize;
     ///
 
     /** The associativity of the cache. */
