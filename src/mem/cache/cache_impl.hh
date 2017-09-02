@@ -332,9 +332,9 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead)
 {
     // fresh temperature after several ticks
     Tick cur = curTick();
-    if (nextFreshen - cur <= 0) {
+    if (nextFreshen <= cur) {
         generateTemperature();
-        while (nextFreshen - cur <= 0)
+        while (nextFreshen <= cur)
             nextFreshen += refreshPeriod * clockPeriod();
     }
     
