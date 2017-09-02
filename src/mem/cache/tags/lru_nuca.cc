@@ -118,7 +118,8 @@ LRU_NUCA::accessBlock(Addr addr, bool is_secure, Cycles &lat,
     Addr tag = extractTag(addr);
     unsigned set = extractSet(addr);
     BlkType *blk = sets[set].findBlk(tag, is_secure);
-    lat = calcLatency(addr, is_secure, is_read);
+    // initial latency is detemined by Cache.
+    // lat = calcLatency(addr, is_secure, is_read);
 
     // Access all tags in parallel, hence one in each way.  The data side
     // either accesses all blocks in parallel, or one block sequentially on

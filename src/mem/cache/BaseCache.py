@@ -58,6 +58,10 @@ class BaseCache(MemObject):
     bank_intlv_high_bit = Param.Int(0,
         "Cache data array bank interleave highest bit "
         "(0=automatically aligned to cache line granularity)")
+    enable_MRAM = Param.Bool("knob to control if the bank model is used")
+    hot_read_latency = Param.Cycles("The read latency for hot banks in this cache when enable MRAM")
+    hot_write_latency = Param.Cycles("The write latency for hot banks in this cache when enable MRAM")
+    refresh_period = Param.Cycles("The period to refresh temperature distribution of MRAM")
     max_miss_count = Param.Counter(0,
         "number of misses to handle before calling exit")
     mshrs = Param.Int("number of MSHRs (max outstanding requests)")

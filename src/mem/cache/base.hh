@@ -343,6 +343,16 @@ class BaseCache : public MemObject
      */
     const Addr bankIntlvMask;
 
+    // changed by Bi WU
+    /**
+     * using MRAM or not
+     */
+    const bool enableMRAM;
+
+    const unsigned bankCols;
+    const unsigned bankRows;
+    ///
+
     /** The number of targets for each MSHR. */
     const int numTarget;
 

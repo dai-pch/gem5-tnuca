@@ -115,13 +115,13 @@ def addCommonOptions(parser):
     parser.add_option("--l1-read-lat", type="int", default=2,
                       help="L1 read latency (cycles).")
     parser.add_option("--l2-read-lat", type="int", default=10,
-                      help="L2 read latency (cycles).")
+                      help="L2 read latency (cycles), when enable MRAM, it's cool banks' latency.")
     parser.add_option("--l3-read-lat", type="int", default=40,
                       help="L3 read latency (cycles).")
     parser.add_option("--l1-write-lat", type="int", default=2,
                       help="L1 write latency (cycles).")
     parser.add_option("--l2-write-lat", type="int", default=10,
-                      help="L2 write latency (cycles).")
+                      help="L2 write latency (cycles), when enable MRAM, it's cool banks' latency.")
     parser.add_option("--l3-write-lat", type="int", default=40,
                       help="L3 write latency (cycles).")
     parser.add_option("--l1-enable-bank", action="store_true",
@@ -148,6 +148,15 @@ def addCommonOptions(parser):
                       help="L2 bank interleave highest bit.")
     parser.add_option("--l3-intlv-bit", type="int", default=0,
                       help="L3 bank interleave highest bit.")
+
+    parser.add_option("--l2-enable-MRAM", action="store_true",
+                      help="L3 bank interleave highest bit.")
+    parser.add_option("--l2-hot-read-lat", type="int", default=10,
+                      help="L2 read latency in hot banks if enable MRAM (cycles).")
+    parser.add_option("--l2-hot-write-lat", type="int", default=10,
+                      help="L2 write latency in hot banks if enable MRAM (cycles).")
+    parser.add_option("--l2-refresh-period", type="int", default=10000000,
+                      help="The period to refresh temperature distribution of MRAM (cycles).")
     
     parser.add_option("--cacheline_size", type="int", default=64)
 

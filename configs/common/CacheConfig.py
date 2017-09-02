@@ -75,7 +75,11 @@ def config_cache(options, system):
                                    enable_bank_model=options.l2_enable_bank,
                                    num_banks=options.l2_num_banks,
                                    Num_bank_per_group=options.l2_banks_per_group,
-                                   bank_intlv_high_bit=options.l2_intlv_bit)
+                                   bank_intlv_high_bit=options.l2_intlv_bit,
+                                   enable_MRAM=options.l2_enable_MRAM,
+                                   hot_read_latency=options.l2-hot-read-lat,
+                                   hot_write_latency=options.l2-hot-write-lat,
+                                   refresh_period=options.l2-refresh-period)
 
         system.tol2bus = CoherentBus(clk_domain = system.cpu_clk_domain,
                                      width = 32)

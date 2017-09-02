@@ -65,6 +65,7 @@
 #include "mem/cache/cache.hh"
 #include "mem/cache/mshr.hh"
 #include "sim/sim_exit.hh"
+#include <random>
 
 template<class TagStore>
 Cache<TagStore>::Cache(const Params *p)
@@ -72,7 +73,11 @@ Cache<TagStore>::Cache(const Params *p)
       tags(dynamic_cast<TagStore*>(p->tags)),
       prefetcher(p->prefetcher),
       doFastWrites(true),
-      prefetchOnAccess(p->prefetch_on_access)
+      prefetchOnAccess(p->prefetch_on_access),
+      hotReadLatency(p->hot_read_latency),
+      hotWriteLatency(p->hot_write_latency),
+      nextFreshen(0),
+      refreshPeriod(p->refresh_period)
 {
     tempBlock = new BlkType();
     tempBlock->data = new uint8_t[blkSize];
@@ -85,6 +90,10 @@ Cache<TagStore>::Cache(const Params *p)
     tags->setCache(this);
     if (prefetcher)
         prefetcher->setCache(this);
+    
+    for (int i = 0;i < bankRows;++i)
+        bankTemperature = std::vector<double>(bankCols);
+    generateTemperature();
 }
 
 template<class TagStore>
@@ -281,6 +290,74 @@ Cache<TagStore>::squash(int threadNum)
     }
 }
 
+//reset by Bi
+template<class TagStore>
+double 
+Cache<TagStore>::genATemper(bool isHigh)
+{
+    static std::default_random_engine generator;
+    std::uniform_real_distribution<double> high(60, 70);
+    std::uniform_real_distribution<double> low(40, 50);
+    
+    if (isHigh)
+        return high(generator);
+    else
+        return low(generator);
+}
+
+template<class TagStore>
+void
+Cache<TagStore>::generateTemperature()
+{
+    double highest = 0;
+    double lowest = 10000;
+    for (int j = 0;j < bankCols;++j){
+        double high_temper = genATemper(true);
+        double low_temper = genATemper(false);
+        for (int i = 0;i < bankRows;++i){
+            bankTemperature[i][j] = high_temper - (high_temper 
+                                    - low_temper) * i / (bankRows - 1);
+        }
+        if (high_temper > highest)
+            highest = high_temper;
+        if (low_temper < lowest)
+            lowest = low_temper;
+    }
+
+    tempratureThreshold = (highest - lowest) / 2;
+}
+
+template<class TagStore>
+Cycles 
+Cache<TagStore>::getBankLatency(Addr addr, bool isRead)
+{
+    // fresh temperature after several ticks
+    if (nextFreshen - curTick() <= 0) {
+        generateTemperature();
+        while (nextFreshen - curTick() <= 0)
+            nextFreshen += refreshPeriod * clockPeriod();
+    }
+    
+    Cycles lat;
+    unsigned bank_id = getBankId(addr); // begin from 0
+    unsigned bank_row = bank_id / bankCols; // begin from 0
+    unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
+    
+    // in hot zone
+    if (bankTemperature[bank_row][bank_col] >= tempratureThreshold) {
+        if (isRead)
+            lat = hotReadLatency;
+        else
+            lat = hotWriteLatency;
+    } else { // in cool zone
+        if (isRead)
+            lat = readLatency;
+        else
+            lat = writeLatency;
+    }
+    return lat;
+}
+
 /////////////////////////////////////////////////////
 //
 // Access path: requests coming in from the CPU side
@@ -298,30 +375,38 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
-    Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    Cycles Latency;
+    if (enableMRAM) {
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
+    } else {
+        Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    }
     //get the latency here no matter it is read or not
 
     if (pkt->req->isUncacheable()) {
         uncacheableFlush(pkt);
         blk = NULL;
-        lat = Latency;
+        lat = readLatency;
         return false;
     }
 
     int id = pkt->req->hasContextId() ? pkt->req->contextId() : -1;
     blk = tags->accessBlock(pkt->getAddr(), pkt->isSecure(), lat, id, pkt->isRead());
 
-    // Update latency decided by if it's read or write
-    // @todo: We now consider the tag lookup and data array operation are in
-    //        parallel.  However, a more accurate model should assume they are
     //reset by bi
-    if(pkt->isRead()){
-    	if(Latency > lat) lat = Latency;
+    if (!enableMRAM) {
+        // Update latency decided by if it's read or write
+        // @todo: We now consider the tag lookup and data array operation are in
+        //        parallel.  However, a more accurate model should assume they are
+        //reset by bi
+        if(pkt->isRead()){
+            if(readLatency > lat) lat = readLatency;
+        }
+        else if (pkt->isWrite()){
+            if(writeLatency > lat) lat = writeLatency;
+        }
+        //end
     }
-    else if (pkt->isWrite()){
-    	if(Latency > lat) lat=Latency;
-    }
-    //end
 
     DPRINTF(Cache, "%s%s %x (%s) %s %s\n", pkt->cmdString(),
             pkt->req->isInstFetch() ? " (ifetch)" : "",
@@ -401,7 +486,12 @@ Cache<TagStore>::recvTimingSnoopResp(PacketPtr pkt)
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
-    Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    Cycles Latency;
+    if (enableMRAM) {
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
+    } else {
+        Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    }
     //get the latency here no matter it is read or not
 
     Tick time = clockEdge(Latency);
@@ -448,8 +538,12 @@ Cache<TagStore>::recvTimingReq(PacketPtr pkt)
 
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
-    Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    if (enableMRAM) {
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
+    } else {
+        Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    }
     //get the latency here no matter it is read or not
 
     // we charge hitLatency for doing just about anything here
@@ -700,8 +794,12 @@ Cache<TagStore>::recvAtomic(PacketPtr pkt)
 {
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
-    Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    if (enableMRAM) {
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
+    } else {
+        Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    }
     //get the latency here no matter it is read or not
 
 	Cycles lat = Latency;
@@ -915,8 +1013,12 @@ Cache<TagStore>::recvTimingResp(PacketPtr pkt)
 
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
-    Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    if (enableMRAM) {
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
+    } else {
+        Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    }
     //get the latency here no matter it is read or not
 
     Tick time = clockEdge(Latency);
@@ -1398,8 +1500,12 @@ doTimingSupplyResponse(PacketPtr req_pkt, uint8_t *blk_data,
 
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
-    Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    if (enableMRAM) {
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
+    } else {
+        Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    }
     //get the latency here no matter it is read or not
 
     DPRINTF(Cache, "%s created response: %s address %x size %d\n",
@@ -1629,8 +1735,12 @@ Cache<TagStore>::recvAtomicSnoop(PacketPtr pkt)
 
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
-    Cycles Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    if (enableMRAM) {
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
+    } else {
+        Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+    }
     //get the latency here no matter it is read or not
 
     BlkType *blk = tags->findBlock(pkt->getAddr(), pkt->isSecure());

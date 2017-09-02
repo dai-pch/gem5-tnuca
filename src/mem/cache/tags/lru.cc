@@ -132,7 +132,8 @@ LRU::accessBlock(Addr addr, bool is_secure, Cycles &lat, int master_id, bool is_
     Addr tag = extractTag(addr);
     unsigned set = extractSet(addr);
     BlkType *blk = sets[set].findBlk(tag, is_secure);
-    lat = hitLatency;
+    // initial latency is detemined by Cache.
+    // lat = hitLatency;
 
     // Access all tags in parallel, hence one in each way.  The data side
     // either accesses all blocks in parallel, or one block sequentially on

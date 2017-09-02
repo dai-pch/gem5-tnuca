@@ -192,6 +192,17 @@ class Cache : public BaseCache
      */
     std::vector<PacketPtr> pendingDelete;
 
+    //reset by Bi
+    double genATemper(bool isHigh);
+    void generateTemperature();
+    Cycles getBankLatency(Addr addr, bool isRead);
+    std::vector<std::vector<double> > bankTemperature;
+    double tempratureThreshold;
+    const Cycles hotReadLatency;
+    const Cycles hotWriteLatency;
+    Tick nextFreshen;
+    Cycles refreshPeriod;
+
     /**
      * Does all the processing necessary to perform the provided request.
      * @param pkt The memory request to perform.

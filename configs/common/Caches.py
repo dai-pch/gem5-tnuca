@@ -55,6 +55,10 @@ class L1Cache(BaseCache):
     mshrs = 4
     tgts_per_mshr = 20
     is_top_level = True
+    enable_MRAM = False
+    hot_read_latency = 2
+    hot_write_latency = 2
+    refresh_period = 100000000000
 
 class L2Cache(BaseCache):
     assoc = 8
@@ -66,6 +70,10 @@ class L2Cache(BaseCache):
     tgts_per_mshr = 12
     write_buffers = 8
     tags = Param.BaseTags(T_NUCA(), "t_nuca")
+    enable_MRAM = False
+    hot_read_latency = 20
+    hot_write_latency = 20
+    refresh_period = 100000000000
 
 class IOCache(BaseCache):
     assoc = 8
@@ -78,6 +86,10 @@ class IOCache(BaseCache):
     tgts_per_mshr = 12
     forward_snoops = False
     is_top_level = True
+    enable_MRAM = False
+    hot_read_latency = 50
+    hot_write_latency = 50
+    refresh_period = 100000000000
 
 class PageTableWalkerCache(BaseCache):
     assoc = 2
@@ -89,3 +101,7 @@ class PageTableWalkerCache(BaseCache):
     size = '1kB'
     tgts_per_mshr = 12
     is_top_level = True
+    enable_MRAM = False
+    hot_read_latency = 2
+    hot_write_latency = 2
+    refresh_period = 100000000000
