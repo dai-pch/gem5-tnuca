@@ -92,7 +92,7 @@ Cache<TagStore>::Cache(const Params *p)
         prefetcher->setCache(this);
     
     for (int i = 0;i < bankRows;++i)
-        bankTemperature = std::vector<double>(bankCols);
+        bankTemperature[i] = std::vector<double>(bankCols);
     generateTemperature();
 }
 
@@ -538,7 +538,8 @@ Cache<TagStore>::recvTimingReq(PacketPtr pkt)
 
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
+    Cycles Latency;
     if (enableMRAM) {
         Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
     } else {
@@ -794,7 +795,8 @@ Cache<TagStore>::recvAtomic(PacketPtr pkt)
 {
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    
+    Cycles Latency;
     if (enableMRAM) {
         Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
     } else {
@@ -1013,7 +1015,8 @@ Cache<TagStore>::recvTimingResp(PacketPtr pkt)
 
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    
+    Cycles Latency;
     if (enableMRAM) {
         Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
     } else {
@@ -1500,7 +1503,8 @@ doTimingSupplyResponse(PacketPtr req_pkt, uint8_t *blk_data,
 
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    
+    Cycles Latency;
     if (enableMRAM) {
         Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
     } else {
@@ -1735,7 +1739,8 @@ Cache<TagStore>::recvAtomicSnoop(PacketPtr pkt)
 
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
-    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    Cycles Latency;
+    //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    
+    Cycles Latency;
     if (enableMRAM) {
         Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
     } else {

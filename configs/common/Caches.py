@@ -69,7 +69,7 @@ class L2Cache(BaseCache):
     mshrs = 20
     tgts_per_mshr = 12
     write_buffers = 8
-    tags = Param.BaseTags(T_NUCA(), "t_nuca")
+    tags = Param.BaseTags(LRU(), "lru")
     enable_MRAM = False
     hot_read_latency = 20
     hot_write_latency = 20
