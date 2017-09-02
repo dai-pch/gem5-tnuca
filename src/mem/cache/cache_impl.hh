@@ -91,8 +91,7 @@ Cache<TagStore>::Cache(const Params *p)
     if (prefetcher)
         prefetcher->setCache(this);
     
-    for (int i = 0;i < bankRows;++i)
-        bankTemperature[i] = std::vector<double>(bankCols);
+    bankTemperature = std::vector<std::vector<double> >(bankRows, std::vector<double>(bankCols));
     generateTemperature();
 }
 
