@@ -323,7 +323,7 @@ Cache<TagStore>::generateTemperature()
             lowest = low_temper;
     }
 
-    tempratureThreshold = (highest - lowest) / 2;
+    tempratureThreshold = (highest + lowest) / 2;
 }
 
 template<class TagStore>
