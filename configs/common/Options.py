@@ -155,7 +155,7 @@ def addCommonOptions(parser):
                       help="L2 read latency in hot banks if enable MRAM (cycles).")
     parser.add_option("--l2-hot-write-lat", type="int", default=10,
                       help="L2 write latency in hot banks if enable MRAM (cycles).")
-    parser.add_option("--l2-refresh-period", type="int", default=10000000,
+    parser.add_option("--l2-refresh-period", type="int", default=1000,
                       help="The period to refresh temperature distribution of MRAM (cycles).")
     
     parser.add_option("--cacheline_size", type="int", default=64)
