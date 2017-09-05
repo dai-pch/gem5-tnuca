@@ -197,7 +197,7 @@ class Cache : public BaseCache
     void generateTemperature();
     Cycles getBankLatency(Addr addr, bool isRead);
     std::vector<std::vector<double> > bankTemperature;
-    double tempratureThreshold;
+    double temperatureThreshold;
     const Cycles hotReadLatency;
     const Cycles hotWriteLatency;
     Tick nextFreshen;

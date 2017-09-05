@@ -312,7 +312,7 @@ Cache<TagStore>::generateTemperature()
     double lowest = 10000;
     for (int j = 0;j < bankCols;++j){
         double high_temper = genATemper(true);
-        double low_temper = genATemper(false);
+        double low_temper = high_temper - 40.0;
         for (int i = 0;i < bankRows;++i){
             bankTemperature[i][j] = high_temper - (high_temper 
                                     - low_temper) * i / (bankRows - 1);
@@ -323,7 +323,7 @@ Cache<TagStore>::generateTemperature()
             lowest = low_temper;
     }
 
-    tempratureThreshold = (highest + lowest) / 2;
+    temperatureThreshold = (highest + lowest) / 2;
 }
 
 template<class TagStore>
@@ -344,7 +344,7 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead)
     unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
     
     // in hot zone
-    if (bankTemperature[bank_row][bank_col] >= tempratureThreshold) {
+    if (bankTemperature[bank_row][bank_col] >= temperatureThreshold) {
         if (isRead)
             lat = hotReadLatency;
         else
