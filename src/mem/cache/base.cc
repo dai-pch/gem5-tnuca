@@ -99,6 +99,13 @@ BaseCache::BaseCache(const Params *p)
     if (ULL(1) << bankIntlvBits != numBanks)
         fatal("%s number of banks is not a power of 2", name());
 
+    if (enableMRAM) {
+        if (!enableBankModel)
+            fatal("%s must enable bank model before enable MRAM model.", name());
+        if (numBanks % 8 != 0)
+            fatal("%s number of banks (%d) is not a multiple of 8.", name(), numBanks);
+    }
+
     uint64_t granularity = ULL(1) << bankIntlvLowBit;
     if (granularity < blkSize)
         fatal("%s bank interleave granuarity (%ld) smaller than line size "
