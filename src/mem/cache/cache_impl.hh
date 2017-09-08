@@ -355,7 +355,6 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure)
             lat = hotWriteLatency;
         if (posi == 7 || posi == 6)
             lat = miss_lat;
-    }
     } else { // in cool zone
         if (isRead)
             lat = readLatency;

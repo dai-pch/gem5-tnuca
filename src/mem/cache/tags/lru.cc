@@ -170,7 +170,7 @@ LRU::calcLatency(Addr addr, bool is_secure, bool is_read) const {
 }
 
 int 
-findBlockPosition(Addr addr, bool is_secure) const {
+LRU::findBlockPosition(Addr addr, bool is_secure) const {
     Addr tag = extractTag(addr);
     unsigned set = extractSet(addr);
     int posi = sets[set].findBlkPosition(tag, is_secure);
