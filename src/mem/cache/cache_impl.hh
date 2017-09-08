@@ -345,7 +345,7 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure)
     
     // posi use to valid if in ecc block
     int posi = tags->findBlockPosition(addr, isSecure);
-    Cycles miss_lat = 450;
+    Cycles miss_lat = Cycles(450);
 
     // in hot zone
     if (bankTemperature[bank_row][bank_col] >= temperatureThreshold) {
