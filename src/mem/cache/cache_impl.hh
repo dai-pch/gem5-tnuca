@@ -344,7 +344,7 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure)
     unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
     
     // posi use to valid if in ecc block
-    int posi = tags->findBlockPosition(addr, isSecure);
+    int posi = tags->getBlockPosition(addr, isSecure);
     Cycles miss_lat = Cycles(450);
 
     // in hot zone
