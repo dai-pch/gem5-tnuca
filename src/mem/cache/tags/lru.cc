@@ -168,6 +168,14 @@ Cycles
 LRU::calcLatency(Addr addr, bool is_secure, bool is_read) const {
     return hitLatency;
 }
+
+int 
+findBlockPosition(Addr addr, bool is_secure) const {
+    Addr tag = extractTag(addr);
+    unsigned set = extractSet(addr);
+    int posi = sets[set].findBlkPosition(tag, is_secure);
+    return posi;
+}
 ///
 
 LRU::BlkType*

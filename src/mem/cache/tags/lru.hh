@@ -140,6 +140,8 @@ public:
     // changed here
     Cycles
     calcLatency(Addr addr, bool is_secure, bool is_read) const;
+    int 
+    findBlockPosition(Addr addr, bool is_secure) const;
     ///
     
 

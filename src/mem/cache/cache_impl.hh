@@ -328,7 +328,7 @@ Cache<TagStore>::generateTemperature()
 
 template<class TagStore>
 Cycles 
-Cache<TagStore>::getBankLatency(Addr addr, bool isRead)
+Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure)
 {
     // fresh temperature after several ticks
     Tick cur = curTick();
@@ -343,17 +343,26 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead)
     unsigned bank_row = bank_id / bankCols; // begin from 0
     unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
     
+    // posi use to valid if in ecc block
+    int posi = tags->findBlockPosition(addr, isSecure);
+    Cycles miss_lat = 450;
+
     // in hot zone
     if (bankTemperature[bank_row][bank_col] >= temperatureThreshold) {
         if (isRead)
             lat = hotReadLatency;
         else
             lat = hotWriteLatency;
+        if (posi == 7 || posi == 6)
+            lat = miss_lat;
+    }
     } else { // in cool zone
         if (isRead)
             lat = readLatency;
         else
             lat = writeLatency;
+        if (posi == 7)
+            lat = miss_lat;
     }
     return lat;
 }
@@ -377,7 +386,7 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency;
     if (enableMRAM) {
-        Latency = getBankLatency(pkt->getAddr(), pkt->isRead());
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     } else {
         Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     }
