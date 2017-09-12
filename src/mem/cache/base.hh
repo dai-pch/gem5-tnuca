@@ -351,6 +351,7 @@ class BaseCache : public MemObject
 
     const unsigned bankCols;
     const unsigned bankRows;
+    virtual void incZoneAccessCount(PacketPtr pkt);
     ///
 
     /** The number of targets for each MSHR. */
@@ -489,6 +490,13 @@ class BaseCache : public MemObject
     Stats::Vector mshr_uncacheable_lat[MemCmd::NUM_MEM_CMDS];
     /** Total cycle latency of overall MSHR misses. */
     Stats::Formula overallMshrUncacheableLatency;
+
+    //modified by pc
+    Stats::Scalar hot_zone_access;
+    Stats::Scalar cool_zone_access;
+    Stats::Scalar ecc_access;
+    
+    ///
 
 #if 0
     /** The total number of MSHR accesses per command and thread. */
@@ -711,12 +719,17 @@ class BaseCache : public MemObject
             if (missCount == 0)
                 exitSimLoop("A cache reached the maximum miss count");
         }
+        
+        if (enableMRAM)
+            incZoneAccessCount(pkt);
     }
     void incHitCount(PacketPtr pkt)
     {
         assert(pkt->req->masterId() < system->maxMasters());
         hits[pkt->cmdToIndex()][pkt->req->masterId()]++;
 
+        if (enableMRAM)
+            incZoneAccessCount(pkt);
     }
 
 };

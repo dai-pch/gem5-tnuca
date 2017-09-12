@@ -339,31 +339,71 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure)
     }
     
     Cycles lat;
-    unsigned bank_id = getBankId(addr); // begin from 0
-    unsigned bank_row = bank_id / bankCols; // begin from 0
-    unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
-    
     // posi use to valid if in ecc block
-    int posi = tags->getBlockPosition(addr, isSecure);
     Cycles miss_lat = Cycles(450);
-
+    if (isInEcc(addr))
+        return miss_lat;
     // in hot zone
-    if (bankTemperature[bank_row][bank_col] >= temperatureThreshold) {
+    if (isInHotZone(addr)) {
         if (isRead)
             lat = hotReadLatency;
         else
             lat = hotWriteLatency;
-        if (posi == 7 || posi == 6)
-            lat = miss_lat;
     } else { // in cool zone
         if (isRead)
             lat = readLatency;
         else
             lat = writeLatency;
-        if (posi == 7)
-            lat = miss_lat;
     }
     return lat;
+}
+
+// true if in hot zone
+template<class TagStore>
+bool
+Cache<TagStore>::isInHotZone(Addr addr) {
+    unsigned bank_id = getBankId(addr); // begin from 0
+    unsigned bank_row = bank_id / bankCols; // begin from 0
+    unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
+
+    if (bankTemperature[bank_row][bank_col] >= temperatureThreshold)
+        return true;
+    else
+        return false;
+}
+
+template<class TagStore>
+bool
+Cache<TagStore>::isInEcc(Addr addr) {
+    unsigned hot_zone_ecc_num = 2;
+    unsigned cool_zone_ecc_num = 1;
+
+    int posi = tags->getBlockPosition(addr, isSecure);
+    if (posi < 0)
+        return false;
+
+    if (isInHotZone(addr)) {
+        posi += hot_zone_ecc_num;
+    } else { // in cool zone
+        posi += cool_zone_ecc_num;
+    }
+    if (posi > assoc)
+        return true;
+    else 
+        return false;
+}
+
+template<class TagStore>
+void
+Cache<TagStore>::incZoneAccessCount(PacketPtr pkt) {
+    if (isInHotZone(pkt->getAddr())) {
+        ++hot_zone_access;
+    } else if (isInEcc(pkt->getAddr())) {
+        ++ecc_access;
+    } else {
+        ++cool_zone_access;
+    }
+    return;
 }
 
 /////////////////////////////////////////////////////
