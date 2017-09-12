@@ -204,7 +204,7 @@ class Cache : public BaseCache
      * @return True if in hot zone, False if in cool zone
      */
     bool isInHotZone(Addr addr);
-    bool isInEcc(Addr addr);
+    bool isInEcc(Addr addr, bool isSecure);
     virtual void incZoneAccessCount(PacketPtr pkt);
     Tick nextFreshen;
     Cycles refreshPeriod;

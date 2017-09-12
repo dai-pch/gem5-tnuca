@@ -374,7 +374,7 @@ Cache<TagStore>::isInHotZone(Addr addr) {
 
 template<class TagStore>
 bool
-Cache<TagStore>::isInEcc(Addr addr) {
+Cache<TagStore>::isInEcc(Addr addr, bool isSecure) {
     unsigned hot_zone_ecc_num = 2;
     unsigned cool_zone_ecc_num = 1;
 
@@ -387,7 +387,7 @@ Cache<TagStore>::isInEcc(Addr addr) {
     } else { // in cool zone
         posi += cool_zone_ecc_num;
     }
-    if (posi > assoc)
+    if (posi > 7)
         return true;
     else 
         return false;
@@ -398,7 +398,7 @@ void
 Cache<TagStore>::incZoneAccessCount(PacketPtr pkt) {
     if (isInHotZone(pkt->getAddr())) {
         ++hot_zone_access;
-    } else if (isInEcc(pkt->getAddr())) {
+    } else if (isInEcc(pkt->getAddr(), pkt->isSecure())) {
         ++ecc_access;
     } else {
         ++cool_zone_access;
