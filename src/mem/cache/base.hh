@@ -351,7 +351,7 @@ class BaseCache : public MemObject
 
     const unsigned bankCols;
     const unsigned bankRows;
-    virtual void incZoneAccessCount(PacketPtr pkt);
+    virtual void incZoneAccessCount(PacketPtr pkt) {}
     ///
 
     /** The number of targets for each MSHR. */
