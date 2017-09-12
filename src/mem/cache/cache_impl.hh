@@ -295,8 +295,8 @@ double
 Cache<TagStore>::genATemper(bool isHigh)
 {
     static std::default_random_engine generator;
-    std::uniform_real_distribution<double> high(60, 70);
-    std::uniform_real_distribution<double> low(40, 50);
+    std::uniform_real_distribution<double> high(60, 80);
+    std::uniform_real_distribution<double> low(30, 50);
     
     if (isHigh)
         return high(generator);
@@ -312,7 +312,7 @@ Cache<TagStore>::generateTemperature()
     double lowest = 10000;
     for (int j = 0;j < bankCols;++j){
         double high_temper = genATemper(true);
-        double low_temper = high_temper - 40.0;
+        double low_temper = high_temper - 30.0;
         for (int i = 0;i < bankRows;++i){
             bankTemperature[i][j] = high_temper - (high_temper 
                                     - low_temper) * i / (bankRows - 1);
