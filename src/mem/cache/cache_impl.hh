@@ -341,7 +341,7 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure)
     Cycles lat;
     // posi use to valid if in ecc block
     Cycles miss_lat = Cycles(450);
-    if (isInEcc(addr))
+    if (isInEcc(addr, isSecure))
         return miss_lat;
     // in hot zone
     if (isInHotZone(addr)) {
