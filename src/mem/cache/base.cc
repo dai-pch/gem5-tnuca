@@ -823,11 +823,11 @@ BaseCache::regStats()
         ;
     cool_zone_access
         .name(name() + ".cool_zone_access")
-        .desc("Number of access for hot zone.")
+        .desc("Number of access for cool zone.")
         ;
     ecc_access
         .name(name() + ".ecc_access")
-        .desc("Number of access for hot zone.")
+        .desc("Number of access for ecc zone.")
         ;
 }
 
