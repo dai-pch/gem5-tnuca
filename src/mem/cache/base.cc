@@ -817,6 +817,18 @@ BaseCache::regStats()
         .desc("Number of misses that were no-allocate")
         ;
 
+    hot_zone_access
+        .name(name() + ".hot_zone_access")
+        .desc("Number of access for hot zone.")
+        ;
+    cool_zone_access
+        .name(name() + ".cool_zone_access")
+        .desc("Number of access for hot zone.")
+        ;
+    ecc_access
+        .name(name() + ".ecc_access")
+        .desc("Number of access for hot zone.")
+        ;
 }
 
 unsigned int

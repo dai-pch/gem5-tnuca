@@ -200,6 +200,12 @@ class Cache : public BaseCache
     double temperatureThreshold;
     const Cycles hotReadLatency;
     const Cycles hotWriteLatency;
+    /**
+     * @return True if in hot zone, False if in cool zone
+     */
+    bool isInHotZone(Addr addr);
+    bool isInEcc(Addr addr);
+    virtual void incZoneAccessCount(PacketPtr pkt);
     Tick nextFreshen;
     Cycles refreshPeriod;
 
