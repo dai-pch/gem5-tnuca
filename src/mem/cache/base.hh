@@ -492,10 +492,12 @@ class BaseCache : public MemObject
     Stats::Formula overallMshrUncacheableLatency;
 
     //modified by pc
-    Stats::Scalar hot_zone_access;
-    Stats::Scalar cool_zone_access;
-    Stats::Scalar ecc_access;
-    
+    Stats::Scalar hot_zone_read_access;
+    Stats::Scalar cool_zone_read_access;
+    Stats::Scalar ecc_read_access;
+    Stats::Scalar hot_zone_write_access;
+    Stats::Scalar cool_zone_write_access;
+    Stats::Scalar ecc_write_access;
     ///
 
 #if 0

@@ -397,11 +397,20 @@ template<class TagStore>
 void
 Cache<TagStore>::incZoneAccessCount(PacketPtr pkt) {
     if (isInHotZone(pkt->getAddr())) {
-        ++hot_zone_access;
+        if (pkt->isRead())
+            ++hot_zone_read_access;
+        else
+            ++hot_zone_write_access;
     } else if (isInEcc(pkt->getAddr(), pkt->isSecure())) {
-        ++ecc_access;
+        if (pkt->isRead())
+            ++ecc_read_access;
+        else
+            ++ecc_write_access;
     } else {
-        ++cool_zone_access;
+        if (pkt->isRead())
+            ++cool_zone_read_access;
+        else
+            ++cool_zone_write_access;
     }
     return;
 }

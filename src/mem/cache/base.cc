@@ -817,17 +817,29 @@ BaseCache::regStats()
         .desc("Number of misses that were no-allocate")
         ;
 
-    hot_zone_access
-        .name(name() + ".hot_zone_access")
-        .desc("Number of access for hot zone.")
+    hot_zone_read_access
+        .name(name() + ".hot_zone_read_access")
+        .desc("Number of read access for hot zone.")
         ;
-    cool_zone_access
-        .name(name() + ".cool_zone_access")
-        .desc("Number of access for cool zone.")
+    hot_zone_write_access
+        .name(name() + ".hot_zone_write_access")
+        .desc("Number of write access for hot zone.")
         ;
-    ecc_access
-        .name(name() + ".ecc_access")
-        .desc("Number of access for ecc zone.")
+    cool_zone_read_access
+        .name(name() + ".cool_zone_read_access")
+        .desc("Number of read access for cool zone.")
+        ;
+    cool_zone_write_access
+        .name(name() + ".cool_zone_write_access")
+        .desc("Number of write access for cool zone.")
+        ;
+    ecc_read_access
+        .name(name() + ".ecc_read_access")
+        .desc("Number of read access for ecc zone.")
+        ;
+    ecc_write_access
+        .name(name() + ".ecc_write_access")
+        .desc("Number of write access for ecc zone.")
         ;
 }
 
