@@ -328,7 +328,7 @@ Cache<TagStore>::generateTemperature()
 
 template<class TagStore>
 Cycles 
-Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure)
+Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure, bool& is_miss)
 {
     // fresh temperature after several ticks
     Tick cur = curTick();
@@ -341,8 +341,10 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure)
     Cycles lat;
     // posi use to valid if in ecc block
     Cycles miss_lat = Cycles(450);
-    if (isInEcc(addr, isSecure))
+    if (isInEcc(addr, isSecure)) {
+        is_miss = true;
         return miss_lat;
+    }
     // in hot zone
     if (isInHotZone(addr)) {
         if (isRead)
@@ -432,9 +434,10 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
     //reset by Bi
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
+    bool is_ecc_miss = false;
     Cycles Latency;
     if (enableMRAM) {
-        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure(), is_ecc_miss);
     } else {
         Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     }
@@ -474,7 +477,10 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
 
         if (pkt->needsExclusive() ? blk->isWritable() : blk->isReadable()) {
             // OK to satisfy access
-            incHitCount(pkt);
+            if (!is_ecc_miss)
+                incHitCount(pkt);
+            else
+                incMissCount(pkt);
             satisfyCpuSideRequest(pkt, blk);
             return true;
         }
@@ -508,7 +514,10 @@ Cache<TagStore>::access(PacketPtr pkt, BlkType *&blk,
         // nothing else to do; writeback doesn't expect response
         assert(!pkt->needsResponse());
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
-        incHitCount(pkt);
+        if (!is_ecc_miss)
+            incHitCount(pkt);
+        else
+            incMissCount(pkt);
         return true;
     }
 
@@ -544,8 +553,9 @@ Cache<TagStore>::recvTimingSnoopResp(PacketPtr pkt)
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency;
+    bool dummy;
     if (enableMRAM) {
-        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure(), dummy);
     } else {
         Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     }
@@ -597,8 +607,9 @@ Cache<TagStore>::recvTimingReq(PacketPtr pkt)
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);
     Cycles Latency;
+    bool dummy;
     if (enableMRAM) {
-        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure(), dummy);
     } else {
         Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     }
@@ -854,8 +865,9 @@ Cache<TagStore>::recvAtomic(PacketPtr pkt)
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    
     Cycles Latency;
+    bool dummy;
     if (enableMRAM) {
-        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure(), dummy);
     } else {
         Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     }
@@ -1074,8 +1086,9 @@ Cache<TagStore>::recvTimingResp(PacketPtr pkt)
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    
     Cycles Latency;
+    bool dummy;
     if (enableMRAM) {
-        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure(), dummy);
     } else {
         Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     }
@@ -1562,8 +1575,9 @@ doTimingSupplyResponse(PacketPtr req_pkt, uint8_t *blk_data,
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    
     Cycles Latency;
+    bool dummy;
     if (enableMRAM) {
-        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure(), dummy);
     } else {
         Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     }
@@ -1798,8 +1812,9 @@ Cache<TagStore>::recvAtomicSnoop(PacketPtr pkt)
     //unsigned bank_id = getBankId(pkt->getAddr());
     //unsigned group_id = getGroupId(bank_id, num_bank_per_group);    
     Cycles Latency;
+    bool dummy;
     if (enableMRAM) {
-        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
+        Latency = getBankLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure(), dummy);
     } else {
         Latency = tags->calcLatency(pkt->getAddr(), pkt->isRead(), pkt->isSecure());
     }
