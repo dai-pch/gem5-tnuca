@@ -195,7 +195,7 @@ class Cache : public BaseCache
     //reset by Bi
     double genATemper(bool isHigh);
     void generateTemperature();
-    Cycles getBankLatency(Addr addr, bool isRead, bool isSecure);
+    Cycles getBankLatency(Addr addr, bool isRead, bool isSecure, bool& is_miss);
     std::vector<std::vector<double> > bankTemperature;
     double temperatureThreshold;
     const Cycles hotReadLatency;
