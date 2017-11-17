@@ -195,8 +195,12 @@ class Cache : public BaseCache
     //reset by Bi
     double genATemper(bool isHigh);
     void generateTemperature();
+    void generateBankStatus();
     Cycles getBankLatency(Addr addr, bool isRead, bool isSecure, bool& is_miss);
     std::vector<std::vector<double> > bankTemperature;
+    std::vector<std::vector<unsigned> > bankEccNum;
+    std::vector<std::vector<Tick> > bankAvailableTick;
+
     double temperatureThreshold;
     const Cycles hotReadLatency;
     const Cycles hotWriteLatency;
@@ -208,6 +212,7 @@ class Cache : public BaseCache
     virtual void incZoneAccessCount(PacketPtr pkt);
     Tick nextFreshen;
     Cycles refreshPeriod;
+    Cycles refreshCycles;
 
     /**
      * Does all the processing necessary to perform the provided request.

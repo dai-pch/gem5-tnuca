@@ -77,7 +77,8 @@ Cache<TagStore>::Cache(const Params *p)
       hotReadLatency(p->hot_read_latency),
       hotWriteLatency(p->hot_write_latency),
       nextFreshen(0),
-      refreshPeriod(p->refresh_period)
+      refreshPeriod(p->refresh_period),
+      refreshCycles(5)
 {
     tempBlock = new BlkType();
     tempBlock->data = new uint8_t[blkSize];
@@ -92,7 +93,9 @@ Cache<TagStore>::Cache(const Params *p)
         prefetcher->setCache(this);
     
     bankTemperature = std::vector<std::vector<double> >(bankRows, std::vector<double>(bankCols));
-    generateTemperature();
+    bankEccNum = std::vector<std::vector<unsigned> >(bankRows, std::vector<unsigned>(bankCols, 0));
+    bankAvailableTick = std::vector<std::vector<Tick> >(bankRows, std::vector<Tick>(bankCols, Tick(0)));
+    generateBankStatus();
 }
 
 template<class TagStore>
@@ -327,6 +330,27 @@ Cache<TagStore>::generateTemperature()
 }
 
 template<class TagStore>
+void
+Cache<TagStore>::generateBankStatus() {
+    generateTemperature();
+    for (int j = 0;j < bankCols;++j) {
+        for (int i = 0;i < bankRows;++i) {
+            unsigned next_ecc_num;
+            if (bankTemperature[i][j] >= temperatureThreshold)
+                next_ecc_num = 2;
+            else
+                next_ecc_num = 1;
+
+            if (bankEccNum[i][j] != next_ecc_num) {
+                bankEccNum[i][j] = next_ecc_num;
+                Tick cur = curTick();
+                bankAvailableTick[i][j] = cur + refreshCycles * clockPeriod();
+            }
+        }
+    }
+}
+
+template<class TagStore>
 Cycles 
 Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure, bool& is_miss)
 {
@@ -337,27 +361,45 @@ Cache<TagStore>::getBankLatency(Addr addr, bool isRead, bool isSecure, bool& is_
         while (nextFreshen <= cur)
             nextFreshen += refreshPeriod * clockPeriod();
     }
-    
-    Cycles lat;
+
+    Cycles lat = getBankAvailableCycles(addr);
     // posi use to valid if in ecc block
     Cycles miss_lat = Cycles(450);
     if (isInEcc(addr, isSecure)) {
         is_miss = true;
-        return miss_lat;
-    }
-    // in hot zone
-    if (isInHotZone(addr)) {
-        if (isRead)
-            lat = hotReadLatency;
-        else
-            lat = hotWriteLatency;
-    } else { // in cool zone
-        if (isRead)
-            lat = readLatency;
-        else
-            lat = writeLatency;
+        lat += miss_lat;
+    } else {
+        // in hot zone
+        if (isInHotZone(addr)) {
+            if (isRead)
+                lat += hotReadLatency;
+            else
+                lat += hotWriteLatency;
+        } else { // in cool zone
+            if (isRead)
+                lat += readLatency;
+            else
+                lat += writeLatency;
+        }
     }
     return lat;
+}
+
+template<class TagStore>
+Cycles 
+Cache<TagStore>::getBankAvailableCycles(Addr addr) {
+    unsigned bank_id = getBankId(addr); // begin from 0
+    unsigned bank_row = bank_id / bankCols; // begin from 0
+    unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
+
+    Tick cur = curTick();
+
+    if (bankAvailableTick[bank_row][bank_col] > cur) {
+        Tick diff = bankAvailableTick[bank_row][bank_col] - cur;
+        return ticksToCycles(diff);
+    } else {
+        return Cycles(0);
+    }
 }
 
 // true if in hot zone
@@ -368,7 +410,7 @@ Cache<TagStore>::isInHotZone(Addr addr) {
     unsigned bank_row = bank_id / bankCols; // begin from 0
     unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
 
-    if (bankTemperature[bank_row][bank_col] >= temperatureThreshold)
+    if (bankEccNum[bank_row][bank_col] > 1)
         return true;
     else
         return false;
@@ -377,18 +419,16 @@ Cache<TagStore>::isInHotZone(Addr addr) {
 template<class TagStore>
 bool
 Cache<TagStore>::isInEcc(Addr addr, bool isSecure) {
-    unsigned hot_zone_ecc_num = 2;
-    unsigned cool_zone_ecc_num = 1;
+    unsigned bank_id = getBankId(addr); // begin from 0
+    unsigned bank_row = bank_id / bankCols; // begin from 0
+    unsigned bank_col = bank_id - bankCols * bank_row; // begin from 0
 
     int posi = tags->getBlockPosition(addr, isSecure);
     if (posi < 0)
         return false;
 
-    if (isInHotZone(addr)) {
-        posi += hot_zone_ecc_num;
-    } else { // in cool zone
-        posi += cool_zone_ecc_num;
-    }
+    posi += bankEccNum[bank_row][bank_col];
+
     if (posi > 7)
         return true;
     else 
