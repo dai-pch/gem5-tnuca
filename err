@@ -1,0 +1,22 @@
+In file included from build/ALPHA/mem/cache/cache.cc:43:0:
+build/ALPHA/mem/cache/cache_impl.hh: In member function 'bool Cache<TagStore>::isInEcc(Addr)':
+build/ALPHA/mem/cache/cache_impl.hh:381:45: error: 'isSecure' was not declared in this scope
+     int posi = tags->getBlockPosition(addr, isSecure);
+                                             ^
+build/ALPHA/mem/cache/cache_impl.hh:390:16: error: 'assoc' was not declared in this scope
+     if (posi > assoc)
+                ^
+build/ALPHA/mem/cache/cache_impl.hh: In member function 'bool Cache<TagStore>::isInEcc(Addr) [with TagStore = LRU; Addr = long unsigned int]':
+build/ALPHA/mem/cache/cache_impl.hh:394:1: error: control reaches end of non-void function [-Werror=return-type]
+ }
+ ^
+build/ALPHA/mem/cache/cache_impl.hh: In member function 'bool Cache<TagStore>::isInEcc(Addr) [with TagStore = LRU_NUCA; Addr = long unsigned int]':
+build/ALPHA/mem/cache/cache_impl.hh:394:1: error: control reaches end of non-void function [-Werror=return-type]
+ }
+ ^
+build/ALPHA/mem/cache/cache_impl.hh: In member function 'bool Cache<TagStore>::isInEcc(Addr) [with TagStore = T_NUCA; Addr = long unsigned int]':
+build/ALPHA/mem/cache/cache_impl.hh:394:1: error: control reaches end of non-void function [-Werror=return-type]
+ }
+ ^
+cc1plus: all warnings being treated as errors
+scons: *** [build/ALPHA/mem/cache/cache.o] Error 1
