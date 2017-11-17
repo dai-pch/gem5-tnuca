@@ -197,7 +197,7 @@ class Cache : public BaseCache
     void generateTemperature();
     void generateBankStatus();
     Cycles getBankLatency(Addr addr, bool isRead, bool isSecure, bool& is_miss);
-    Cycles getBankAvailableCycles(Addr addr)
+    Cycles getBankAvailableCycles(Addr addr);
     std::vector<std::vector<double> > bankTemperature;
     std::vector<std::vector<unsigned> > bankEccNum;
     std::vector<std::vector<Tick> > bankAvailableTick;
